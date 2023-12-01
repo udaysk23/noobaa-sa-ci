@@ -1,0 +1,4 @@
+# Config file for user owned config root
+---
+ENV_DATA:
+  config_root: "PATH_TO_CONFIG_ROOT"

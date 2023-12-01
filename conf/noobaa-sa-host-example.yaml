@@ -1,0 +1,10 @@
+# Config file which contain details of Noobaa SA host
+---
+ENV_DATA:
+  noobaa_sa_host: "NOOBAA_SA_HOST_IP"
+  user: "USER_NAME"
+  # can pass either password or private key
+  # password: "PASSWORD"
+  private_key: "PRIVATE_KEY"
+  # deployment type can be either "nsfs" or "db"
+  deployment_type: "DEPLOYMENT_TYPE"
