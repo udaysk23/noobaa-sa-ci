@@ -16,6 +16,13 @@ class SSHConnection:
     A class that connects to remote host
     """
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(SSHConnection, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         """
         Get connection to host
@@ -25,19 +32,34 @@ class SSHConnection:
             sshException: In-case of ssh connection failed
 
         """
+        # Initialize the connection only if it hasn't been created yet
+        self._conn = None
         self.host = config.ENV_DATA["noobaa_sa_host"]
         self.user = config.ENV_DATA["user"]
         self.password = config.ENV_DATA.get("password")
         self.private_key = config.ENV_DATA.get("private_key")
+
+    @property
+    def connection(self):
+        """
+        Get connection to host
+
+        Returns:
+            paramiko.client: Paramiko SSH client connection to host
+
+        """
+        if self._conn:
+            return self._conn
+
         try:
             if self.private_key:
-                self.conn = Connection(
+                self._conn = Connection(
                     host=self.host,
                     user=self.user,
                     private_key=self.private_key,
                 )
             else:
-                self.conn = Connection(
+                self._conn = Connection(
                     host=self.host,
                     user=self.user,
                     password=self.password,
@@ -49,27 +71,18 @@ class SSHConnection:
             log.error(f"SSH connection failed: {sshException}")
             raise sshException
 
-    def get_connection(self):
-        """
-        Get connection to host
+        return self._conn
 
-        Returns:
-            paramiko.client: Paramiko SSH client connection to host
-
-        """
-        return self.conn
-
-    def close_connection(self):
+    @classmethod
+    def close_connection(cls):
         """
         Closes SSH connection
         """
-        self.conn.close()
-
-
-ssh_conn = SSHConnection()
-conn = ssh_conn.get_connection()
+        if cls._instance and cls._instance._conn:
+            cls._instance._conn.close()
+            cls._instance = None
 
 
 def pytest_sessionfinish(session, exitstatus):
     # Close the SSH connection at the end of the pytest session
-    ssh_conn.close_connection()
+    SSHConnection.close_connection()

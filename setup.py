@@ -10,6 +10,7 @@ setup(
     author_email="ocs-ci@redhat.com",
     description="Noobaa Standalone(SA) CI is used to run test cases.",
     install_requires=[
+        "common-ci-utils",
         "jinja2",
         "mergedeep",
         "pytest",
