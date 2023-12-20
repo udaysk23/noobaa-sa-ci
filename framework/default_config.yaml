@@ -1,0 +1,5 @@
+# Default configuration file which will be loaded automatically with framework
+---
+ENV_DATA:
+  config_root: "~/config_root"
+  email: noobaa_sa_qa@redhat.com
