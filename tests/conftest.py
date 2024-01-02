@@ -23,7 +23,7 @@ def unique_resource_name(request):
 
     def _get_unique_name(prefix="resource"):
         unique_id = str(uuid.uuid4()).split("-")[0]
-        return f"{prefix}_{unique_id}"
+        return f"{prefix}-{unique_id}"
 
     return _get_unique_name
 
