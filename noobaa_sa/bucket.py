@@ -2,6 +2,7 @@
 Module which contain bucket operations like create, delete, list and update
 """
 
+import json
 import logging
 import re
 
@@ -41,24 +42,14 @@ class BucketManager:
         log.info("Gather user info before creating bucket")
         cmd = f"{base_cmd} account status --config_root {config_root} --name {account_name} {unwanted_log}"
         retcode, stdout, stderr = self.conn.exec_cmd(cmd)
-        log.info(retcode)
         if retcode != 0:
             raise e.AccountStatusFailed(
                 f"Failed to get status of account {stderr}"
             )
-        account_info = re.findall(r'\{([^}]+)\}', stdout)
-        pattern = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        account_info = account_info[0].strip()
-        account_info = pattern.sub('', account_info)
-        account_info = account_info.replace("'","")
-        account_info_param = account_info.split(", ")
-        account_dict = {}
-        for item in account_info_param:
-            key, value = item.split(':')
-            account_dict[key.strip()] = value.strip()
-        account_email = str(account_dict['email'])
-        bucket_path = str(account_dict['new_buckets_path'])
-
+        log.info(stdout)
+        account_info = json.loads(stdout)
+        account_email = account_info['response']['reply']['email']
+        bucket_path = account_info['response']['reply']['nsfs_account_config']['new_buckets_path']
         cmd = f"{base_cmd} bucket add --config_root {config_root} --name {bucket_name} --email {account_email} --path {bucket_path} {unwanted_log}"
         retcode, stdout, stderr = self.conn.exec_cmd(cmd)
         if retcode != 0:
