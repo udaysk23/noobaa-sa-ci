@@ -12,8 +12,11 @@ from common_ci_utils.templating import Templating
 from framework import config
 from framework.connection import SSHConnection
 from noobaa_sa.defaults import MANAGE_NSFS
-from noobaa_sa.exceptions import (AccountCreationFailed, AccountDeletionFailed,
-                                  AccountListFailed)
+from noobaa_sa.exceptions import (
+    AccountCreationFailed,
+    AccountDeletionFailed,
+    AccountListFailed,
+)
 
 log = logging.getLogger(__name__)
 

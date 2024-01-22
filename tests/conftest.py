@@ -19,14 +19,12 @@ def account_manager(account_json=None):
 @pytest.fixture
 def bucket_manager(request):
     bucket_manager = BucketManager()
-    # TODO: Implement cleanup operation
-    """
+
     def bucket_cleanup():
-      for bucket in bucket_manager.list():
-        bucket_manager.delete(bucket)
-        
+        for bucket in bucket_manager.list():
+            bucket_manager.delete(bucket)
+
     request.addfinalizer(bucket_cleanup)
-    """
     return bucket_manager
 
 
