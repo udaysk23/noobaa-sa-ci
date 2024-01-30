@@ -1,8 +1,5 @@
 import logging
-import os
-import tempfile
 
-from common_ci_utils.templating import Templating
 from framework import config
 
 log = logging.getLogger(__name__)
