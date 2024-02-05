@@ -34,5 +34,9 @@ class BucketStatusFailed(Exception):
     pass
 
 
+class HealthStatusFailed(Exception):
+    pass
+
+
 class BucketUpdateFailed(Exception):
     pass
