@@ -13,7 +13,7 @@ base_cmd = f"sudo /usr/local/noobaa-core/bin/node {health}"
 unwanted_log = "2>/dev/null"
 
 
-# Function for gtting the noobaa health status
+# Function for getting the noobaa health status
 def get_noobaa_health_status(config_root=None, **kwargs):
     """
     Noobaa Health Status
@@ -37,6 +37,7 @@ def get_noobaa_health_status(config_root=None, **kwargs):
 
     Returns:
         string: String of health response
+
     """
     log.info("Getting current Noobaa Health status")
     conn = SSHConnectionManager().connection
