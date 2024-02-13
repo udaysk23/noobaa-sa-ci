@@ -40,3 +40,7 @@ class HealthStatusFailed(Exception):
 
 class BucketUpdateFailed(Exception):
     pass
+
+
+class MissingFileOrDirectoryException(Exception):
+    pass
