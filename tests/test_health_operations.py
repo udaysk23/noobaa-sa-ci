@@ -9,6 +9,7 @@ log = logging.getLogger(__name__)
 
 
 class Test_health_operations:
+    @pytest.fixture
     def setup_prereqs(self, unique_resource_name, random_hex, account_manager, bucket_manager):
         """
             Create account and bucket for performing health operation
@@ -41,10 +42,13 @@ class Test_health_operations:
              "default_value",
         ],
     )
-    def test_noobaa_port_flag(self, unique_resource_name, random_hex, account_manager, bucket_manager, flag):
+    def test_noobaa_port_flag(self, setup_prereqs, flag):
+        """
+        Tests port flag from health CLI with default and non-default value
+        """
         # Perform health operation on noobaa
         log.info("Performing Port operations on node health CLI")
-        self.setup_prereqs(unique_resource_name, random_hex, account_manager, bucket_manager)
+        setup_prereqs
         get_info = json.loads(get_noobaa_health_status(**flag))
         if "error" in get_info.keys():
             raise e.HealthStatusFailed(
@@ -78,10 +82,13 @@ class Test_health_operations:
              "default_value",
         ],
     )
-    def test_noobaa_account_flag(self, unique_resource_name, random_hex, account_manager, bucket_manager, flag):
+    def test_noobaa_account_flag(self, setup_prereqs, flag):
+        """
+        Tests all_account_details flag from health CLI with default and non-default value
+        """
         # Perform health operation on noobaa
         log.info("Performing account operations on node health CLI")
-        self.setup_prereqs(unique_resource_name, random_hex, account_manager, bucket_manager)
+        setup_prereqs
         get_info = json.loads(get_noobaa_health_status(**flag))
         if "error" in get_info.keys():
             raise e.HealthStatusFailed(
@@ -123,10 +130,13 @@ class Test_health_operations:
              "default_value",
         ],
     )
-    def test_noobaa_bucket_flag(self, unique_resource_name, random_hex, account_manager, bucket_manager, flag):
+    def test_noobaa_bucket_flag(self, setup_prereqs, flag):
+        """
+        Tests all_bucket_details flag from health CLI with default and non-default value
+        """
         # Perform health operation on noobaa
         log.info("Performing bucket operations on node health CLI")
-        self.setup_prereqs(unique_resource_name, random_hex, account_manager, bucket_manager)
+        setup_prereqs
         get_info = json.loads(get_noobaa_health_status(**flag))
         if "error" in get_info.keys():
             raise e.HealthStatusFailed(
