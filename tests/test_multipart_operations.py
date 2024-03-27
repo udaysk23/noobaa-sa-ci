@@ -1,13 +1,13 @@
 import logging
 
 from common_ci_utils.random_utils import (
-    generate_random_hex,
     generate_unique_resource_name,
     generate_random_files,
 )
 from utility.utils import (
     check_data_integrity,
     split_file_data_for_multipart_upload,
+    generate_random_key,
 )
 
 log = logging.getLogger(__name__)
@@ -36,8 +36,8 @@ def test_s3_multipart_operations(
 
     # 1. Create an account using Node CLI
     account_name = generate_unique_resource_name(prefix="account")
-    access_key = generate_random_hex()
-    secret_key = generate_random_hex()
+    access_key = generate_random_key(20)
+    secret_key = generate_random_key(40)
     account_manager.create(account_name, access_key, secret_key)
     s3_client = s3_client_factory(
         access_and_secret_keys_tuple=(access_key, secret_key)
