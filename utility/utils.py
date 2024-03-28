@@ -5,6 +5,7 @@ General utility functions
 import logging
 import os
 import random
+import string
 
 from framework import config
 from framework.ssh_connection_manager import SSHConnectionManager
@@ -44,7 +45,8 @@ def get_config_root_full_path():
     Get the full path of the configuration root directory on the remote machine
 
     Returns:
-        str: The full path of the configuration root directory on the remote machine
+        str: The full path of the configuration root directory on the remote
+        machine
 
     """
     config_root = config.ENV_DATA["config_root"]
@@ -114,3 +116,23 @@ def split_file_data_for_multipart_upload(file_name, part_size=None):
                 break
             all_chunks.append(file_chunk)
     return all_chunks
+
+
+def generate_random_key(length=20):
+    """
+    Generates a random string with the given length
+
+    args:
+        length (int): The length of the string.
+
+    returns:
+        str: A random string.
+    """
+    return ''.join(
+        random.choices(
+            string.ascii_letters +
+            string.digits +
+            string.punctuation,
+            k=length
+            )
+        )

@@ -5,7 +5,6 @@ Module which contain account operations like create, delete, list and update
 import logging
 import os
 import tempfile
-from datetime import datetime
 from abc import ABC, abstractmethod
 
 from common_ci_utils.templating import Templating
@@ -75,7 +74,6 @@ class NSFSAccount(Account):
         Args:
             config_root (str): Path to config root
         """
-        account_email = config.ENV_DATA["email"]
 
         hd = get_noobaa_sa_host_home_path()
         bucket_path = os.path.join(hd, f"fs_{account_name}")
@@ -89,15 +87,14 @@ class NSFSAccount(Account):
         account_template = "account.json"
         account_data = {
             "account_name": account_name,
-            "account_email": account_email,
-            # creation_date is required due to https://bugzilla.redhat.com/show_bug.cgi?id=2260325
-            "creation_date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "access_key": access_key,
             "secret_key": secret_key,
             "bucket_path": bucket_path,
             "fs_backend": fs_backend,
         }
-        account_data_full = templating.render_template(account_template, account_data)
+        account_data_full = templating.render_template(
+            account_template, account_data
+            )
         log.info(f"account content: {account_data_full}")
 
         # write to file
