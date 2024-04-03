@@ -217,7 +217,7 @@ def check_nsfs_tls_cert_setup(config_root):
         return False
 
     # Check if a TLS certificate file exists on the remote machine under the config root
-    retcode, _, _ = conn.exec_cmd(f"[ -d '{config_root}/certificates/tls.crt/' ]")
+    retcode, _, _ = conn.exec_cmd(f"sudo [ -e '{config_root}/certificates/tls.crt' ]")
     if retcode != 0:
         log.info(
             f"NSFS server TLS certificate was not found under {config_root}/certificates"
