@@ -14,7 +14,7 @@ from common_ci_utils.templating import Templating
 from framework import config
 from framework.ssh_connection_manager import SSHConnectionManager
 from noobaa_sa import constants
-from noobaa_sa.exceptions import MissingFileOrDirectoryException
+from noobaa_sa.exceptions import MissingFileOrDirectory
 from noobaa_sa.s3_client import S3Client
 
 log = logging.getLogger(__name__)
@@ -152,7 +152,7 @@ def set_nsfs_certs_dir(creds_dir, config_root=config.ENV_DATA["config_root"]):
     )
     retcode, stdout, _ = conn.exec_cmd(f"cat {config_root}/system.json")
     if retcode != 0:
-        raise MissingFileOrDirectoryException(
+        raise MissingFileOrDirectory(
             f"system.json file not found in {config_root}: {stdout}"
         )
     system_json = json.loads(stdout)
@@ -217,7 +217,7 @@ def check_nsfs_tls_cert_setup(config_root):
         return False
 
     # Check if a TLS certificate file exists on the remote machine under the config root
-    retcode, _, _ = conn.exec_cmd(f"[ -d '{config_root}/certificates/tls.crt/' ]")
+    retcode, _, _ = conn.exec_cmd(f"sudo [ -e '{config_root}/certificates/tls.crt' ]")
     if retcode != 0:
         log.info(
             f"NSFS server TLS certificate was not found under {config_root}/certificates"
