@@ -24,7 +24,7 @@ class BucketManager:
         """
         self.manage_nsfs = MANAGE_NSFS
         self.config_root = config.ENV_DATA["config_root"]
-        self.base_cmd = f"sudo /usr/local/noobaa-core/bin/node {self.manage_nsfs}"
+        self.base_cmd = f"sudo {self.manage_nsfs}"
         self.unwanted_log = "2>/dev/null"
         self.conn = SSHConnectionManager().connection
 
