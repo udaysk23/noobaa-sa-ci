@@ -15,21 +15,31 @@ from noobaa_sa.bucket import BucketManager
 from framework import config
 from noobaa_sa.s3_client import S3Client
 from utility.utils import (
-    get_config_root_full_path,
+    get_env_config_root_full_path,
     get_current_test_name,
+    get_noobaa_sa_host_home_path,
 )
 from utility.nsfs_server_utils import (
     restart_nsfs_service,
-    create_tls_key_and_cert,
-    set_nsfs_service_certs_dir,
+    check_nsfs_tls_cert_setup,
+    setup_nsfs_tls_cert,
 )
 
 
 log = logging.getLogger(__name__)
 
 
+@pytest.fixture(scope="class")
+def account_manager_class(account_json=None):
+    return account_manager_implementation(account_json)
+
+
 @pytest.fixture
 def account_manager(account_json=None):
+    return account_manager_implementation(account_json)
+
+
+def account_manager_implementation(account_json=None):
     account_factory = AccountFactory()
     return account_factory.get_account(account_json)
 
@@ -40,51 +50,102 @@ def bucket_manager(request):
 
     def bucket_cleanup():
         for bucket in bucket_manager.list():
-            bucket_manager.delete(bucket)
+            bucket_manager.delete(bucket, force=True)
 
     request.addfinalizer(bucket_cleanup)
     return bucket_manager
 
 
 @pytest.fixture(scope="session")
-def setup_nsfs_server_tls_cert():
+def set_nsfs_server_config_root(request):
     """
-    Configure the NSFS server TLS certification and download the certificate
-    in a local file.
-
-    Args:
-        config_root (str): The path to the configuration root directory.
+    Returns a function that allows
+    configuring the NSFS service to use a custom config root dir
 
     """
     conn = SSHConnectionManager().connection
-    config_root_path = get_config_root_full_path()
-    remote_credentials_dir = f"{config_root_path}/certificates"
 
-    # Create the TLS credentials and configure the NSFS service to use them
-    conn.exec_cmd(f"sudo mkdir -p {remote_credentials_dir}")
-    remote_tls_crt_path = create_tls_key_and_cert(remote_credentials_dir)
-    set_nsfs_service_certs_dir(remote_credentials_dir)
-    restart_nsfs_service()
+    # Ensure to reset to the default config root on teardown
+    def _clear_config_dir_redirect():
+        conn.exec_cmd("sudo rm -f /etc/noobaa.conf.d/config_dir_redirect")
+        restart_nsfs_service()
 
-    # Download the certificate to a local file
-    with tempfile.NamedTemporaryFile(
-        prefix="tls_", suffix=".crt", delete=False
-    ) as local_tls_crt_file:
-        conn.download_file(
-            remotepath=remote_tls_crt_path,
-            localpath=local_tls_crt_file.name,
+    def _redirect_nsfs_service_to_use_custom_config_root(config_root):
+        """
+        Configure the NSFS service to use a custom config root dir
+
+        Args:
+            config_root (str): The full path to the configuration root directory on the remote machine
+
+        """
+
+        # Skip if the provider config is the default just clear the config root redirect
+        if config_root == constants.DEFAULT_CONFIG_ROOT_PATH:
+            _clear_config_dir_redirect()
+            return
+
+        # Skip if the provided config root path is already set
+        retcode, stdout, _ = conn.exec_cmd("cat /etc/noobaa.conf.d/config_dir_redirect")
+        if retcode == 0 and stdout.strip() == config_root:
+            return
+
+        # Make sure the provided config root path exists on the remote machine
+        retcode, _, _ = conn.exec_cmd(f"sudo mkdir -p {config_root}")
+        if retcode != 0:
+            raise FileNotFoundError(
+                "Failed to create the provided config root path on the remote machine"
+            )
+
+        conn.exec_cmd(
+            f"echo '{config_root}' | sudo tee /etc/noobaa.conf.d/config_dir_redirect"
         )
+        restart_nsfs_service()
 
-    S3Client.static_tls_crt_path = local_tls_crt_file.name
+    request.addfinalizer(_clear_config_dir_redirect)
+    return _redirect_nsfs_service_to_use_custom_config_root
 
 
-@pytest.fixture
-def s3_client_factory(setup_nsfs_server_tls_cert, account_manager):
+@pytest.fixture(scope="class")
+def s3_client_factory_class(set_nsfs_server_config_root, account_manager_class):
+    """
+    Class scoped factory to create S3Client instances with given credentials.
+
+    Args:
+        set_nsfs_server_config_root (fixture): The prerequisite fixture to setup the NSFS server TLS certificate.
+        account_manager (AccountManager): The account manager instance.
+
+    Returns:
+        func: A function that creates S3Client instances.
+
+    """
+    return s3_client_factory_implementation(
+        set_nsfs_server_config_root, account_manager_class
+    )
+
+
+@pytest.fixture(scope="function")
+def s3_client_factory(set_nsfs_server_config_root, account_manager):
+    """
+    Function scoped factory to create S3Client instances with given credentials.
+
+    Args:
+        set_nsfs_server_config_root (fixture): The prerequisite fixture to setup the NSFS server TLS certificate.
+        account_manager (AccountManager): The account manager instance.
+
+    Returns:
+        func: A function that creates S3Client instances.
+
+    """
+    return s3_client_factory_implementation(
+        set_nsfs_server_config_root, account_manager
+    )
+
+
+def s3_client_factory_implementation(set_nsfs_server_config_root, account_manager):
     """
     Factory to create S3Client instances with given credentials.
 
     Args:
-        setup_nsfs_server_tls_cert (fixture): The prerequisite fixture to setup the NSFS server TLS certificate.
         account_manager (AccountManager): The account manager instance.
 
     Returns:
@@ -96,6 +157,7 @@ def s3_client_factory(setup_nsfs_server_tls_cert, account_manager):
         endpoint_port=constants.DEFAULT_NSFS_PORT,
         access_and_secret_keys_tuple=None,
         verify_tls=True,
+        config_root=None,
     ):
         """
         Create an S3Client instance using the given credentials.
@@ -109,14 +171,23 @@ def s3_client_factory(setup_nsfs_server_tls_cert, account_manager):
             S3Client: An S3Client instance.
 
         """
+        if not config_root:
+            config_root = get_env_config_root_full_path()
+
+        # The following setup requires the full path of the config root
+        if config_root.startswith("~/"):
+            config_root = (
+                f'{get_noobaa_sa_host_home_path()}/{config_root.split("~/")[1]}'
+            )
+
+        set_nsfs_server_config_root(config_root)
+
+        if not check_nsfs_tls_cert_setup(config_root):
+            setup_nsfs_tls_cert(config_root)
+
         # Set the AWS access and secret keys
-        access_key, secret_key = None, None
         if access_and_secret_keys_tuple is None:
-            account_name = generate_unique_resource_name(prefix="account")
-            access_key = generate_random_hex()
-            secret_key = generate_random_hex()
-            config_root = config.ENV_DATA["config_root"]
-            account_manager.create(account_name, access_key, secret_key, config_root)
+            _, access_key, secret_key = account_manager.create()
         else:
             access_key, secret_key = access_and_secret_keys_tuple
 
@@ -129,6 +200,30 @@ def s3_client_factory(setup_nsfs_server_tls_cert, account_manager):
         )
 
     return create_s3client
+
+
+@pytest.fixture(scope="function")
+def s3client(s3_client_factory):
+    """
+    Create an S3Client using the credentials of a new account.
+
+    Returns:
+        S3Client: An S3Client instance.
+
+    """
+    return s3_client_factory()
+
+
+@pytest.fixture(scope="class")
+def c_scope_s3client(s3_client_factory_class):
+    """
+    Create an S3Client using the credentials of a new account - class scoped.
+
+    Returns:
+        S3Client: An S3Client instance.
+
+    """
+    return s3_client_factory_class()
 
 
 @pytest.fixture()

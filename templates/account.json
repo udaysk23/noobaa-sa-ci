@@ -1,18 +1,10 @@
 {
     "name": "{{account_name}}",
-    "email": "{{account_email}}",
-    "creation_date": "{{creation_date}}",
     "allow_bucket_creation": "true",
-    "access_keys": [
-        {
-            "access_key": "{{access_key}}",
-            "secret_key": "{{secret_key}}"
-        }
-    ],
-    "nsfs_account_config": {
-        "uid": 0,
-        "gid": 0,
-        "new_buckets_path": "{{bucket_path}}",
-        "fs_backend": "{{fs_backend}}"
-    }
+    "access_key": "{{access_key}}",
+    "secret_key": "{{secret_key}}",
+    "uid": 0,
+    "gid": 0,
+    "new_buckets_path": "{{bucket_path}}",
+    "fs_backend": "{{fs_backend}}"
 }
