@@ -135,7 +135,7 @@ class TestMultipartOperations:
         )
         part_resp = c_scope_s3client.list_multipart_upload(resp["bucket_name"])
         assert (
-            part_resp["Parts"] != 0
+            len(part_resp["Uploads"]) != 0
         ), f"Failed to list parts present in {resp['bucket_name']} object"
         log.info(part_resp)
         log.info(
