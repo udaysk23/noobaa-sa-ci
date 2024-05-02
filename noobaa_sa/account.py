@@ -134,7 +134,7 @@ class NSFSAccount(Account):
             config_root = self.config_root
         log.info(f"config root path: {config_root}")
         log.info("Adding account for NSFS deployment")
-        cmd = f"sudo /usr/local/noobaa-core/bin/node {self.manage_nsfs} account add --config_root {config_root} --from_file {account_file.name}"
+        cmd = f"sudo {self.manage_nsfs} account add --config_root {config_root} --from_file {account_file.name}"
         retcode, stdout, stderr = self.conn.exec_cmd(cmd)
         if retcode != 0:
             raise AccountCreationFailed(
@@ -154,7 +154,7 @@ class NSFSAccount(Account):
         if config_root is None:
             config_root = self.config_root
         log.info("Listing accounts for NSFS deployment")
-        cmd = f"sudo /usr/local/noobaa-core/bin/node {self.manage_nsfs} account list --config_root {config_root}"
+        cmd = f"sudo {self.manage_nsfs} account list --config_root {config_root}"
         retcode, stdout, stderr = self.conn.exec_cmd(cmd)
         log.info(stdout)
         if retcode != 0:
@@ -174,7 +174,7 @@ class NSFSAccount(Account):
         log.info("Deleting account for NSFS deployment")
         log.info(account_name)
         log.info(config_root)
-        cmd = f"sudo /usr/local/noobaa-core/bin/node {self.manage_nsfs} account delete --name {account_name} --config_root {config_root}"
+        cmd = f"sudo {self.manage_nsfs} account delete --name {account_name} --config_root {config_root}"
         retcode, stdout, stderr = self.conn.exec_cmd(cmd)
         if retcode != 0:
             raise AccountDeletionFailed(f"Deleting account failed with error {stderr}")
