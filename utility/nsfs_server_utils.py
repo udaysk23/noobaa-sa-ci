@@ -150,7 +150,7 @@ def set_nsfs_certs_dir(creds_dir, config_root=config.ENV_DATA["config_root"]):
     log.info(
         "Editing the NSFS system.json file to specify the path to the TLS key and certificate"
     )
-    retcode, stdout, _ = conn.exec_cmd(f"cat {config_root}/system.json")
+    retcode, stdout, _ = conn.exec_cmd(f"sudo cat {config_root}/system.json")
     if retcode != 0:
         raise MissingFileOrDirectory(
             f"system.json file not found in {config_root}: {stdout}"
@@ -174,7 +174,7 @@ def setup_nsfs_tls_cert(config_root):
     remote_credentials_dir = f"{config_root}/certificates"
 
     # Create the TLS credentials and configure the NSFS service to use them
-    conn.exec_cmd(f"sudo mkdir -p {remote_credentials_dir}")
+    conn.exec_cmd(f"sudo mkdir -p {remote_credentials_dir} -m 777")
     remote_tls_crt_path = create_tls_key_and_cert(remote_credentials_dir)
     set_nsfs_certs_dir(remote_credentials_dir, config_root)
     restart_nsfs_service()
