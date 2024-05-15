@@ -237,7 +237,6 @@ class TestBucketPolicies:
             "PutObject",
             "DeleteObject",
             "CopyObject",
-            "PutBucketPolicy",
             "ListBucket",
         }
         # Other operations should have the opposite access
