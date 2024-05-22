@@ -14,7 +14,7 @@ from common_ci_utils.templating import Templating
 from framework import config
 from framework.ssh_connection_manager import SSHConnectionManager
 from noobaa_sa import constants
-from noobaa_sa.exceptions import MissingFileOrDirectory
+from noobaa_sa.exceptions import MissingFileOrDirectory, UnexpectedBehaviour
 from noobaa_sa.s3_client import S3Client
 
 log = logging.getLogger(__name__)
@@ -133,6 +133,27 @@ def create_tls_key_and_cert(credentials_dir):
     return f"{credentials_dir}/tls.crt"
 
 
+def get_system_json(config_root=config.ENV_DATA["config_root"]):
+    """
+    Get the content of the NSFS system.json file
+
+    Args:
+        config_root(str): The full path to the configuration root directory on the remote machine
+
+    Returns:
+        dict: The content of the system.json file
+    """
+    conn = SSHConnectionManager().connection
+    retcode, stdout, stderr = conn.exec_cmd(f"sudo cat {config_root}/system.json")
+    if retcode != 0:
+        raise MissingFileOrDirectory(
+            f"system.json file not found in {config_root}\n:"
+            f"stdout: {stdout}\n"
+            f"stderr: {stderr}\n"
+        )
+    return json.loads(stdout)
+
+
 def set_nsfs_certs_dir(creds_dir, config_root=config.ENV_DATA["config_root"]):
     """
     Edit the NSFS system.json file to specify the path to the TLS key and certificate
@@ -150,12 +171,7 @@ def set_nsfs_certs_dir(creds_dir, config_root=config.ENV_DATA["config_root"]):
     log.info(
         "Editing the NSFS system.json file to specify the path to the TLS key and certificate"
     )
-    retcode, stdout, _ = conn.exec_cmd(f"sudo cat {config_root}/system.json")
-    if retcode != 0:
-        raise MissingFileOrDirectory(
-            f"system.json file not found in {config_root}: {stdout}"
-        )
-    system_json = json.loads(stdout)
+    system_json = get_system_json(config_root)
     system_json["nsfs_ssl_key_dir"] = creds_dir
     conn.exec_cmd(f"echo '{json.dumps(system_json)}' > {config_root}/system.json")
 
@@ -183,10 +199,7 @@ def setup_nsfs_tls_cert(config_root):
     with tempfile.NamedTemporaryFile(
         prefix="tls_", suffix=".crt", delete=False
     ) as local_tls_crt_file:
-        conn.download_file(
-            remotepath=remote_tls_crt_path,
-            localpath=local_tls_crt_file.name,
-        )
+        download_file_via_ssh(remote_tls_crt_path, local_tls_crt_file.name)
 
     S3Client.static_tls_crt_path = local_tls_crt_file.name
 
@@ -217,17 +230,47 @@ def check_nsfs_tls_cert_setup(config_root):
         return False
 
     # Check if a TLS certificate file exists on the remote machine under the config root
-    retcode, _, _ = conn.exec_cmd(f"sudo [ -e '{config_root}/certificates/tls.crt' ]")
+    remote_crt_path = f"{config_root}/certificates/tls.crt"
+    retcode, _, _ = conn.exec_cmd(f"sudo [ -e '{remote_crt_path}' ]")
     if retcode != 0:
         log.info(
             f"NSFS server TLS certificate was not found under {config_root}/certificates"
         )
         return False
 
+    # Check if the local and remote certificates match
+    comp_result = False
     with tempfile.TemporaryDirectory() as tmp_dir:
-        local_tls_crt_file = f"{tmp_dir}/tls.crt"
-        conn.download_file(
-            remotepath=f"{config_root}/certificates/tls.crt",
-            localpath=f"{tmp_dir}/tls.crt",
-        )
-        return compare_md5sums(local_tls_crt_file, S3Client.static_tls_crt_path)
+        local_crt_path = f"{tmp_dir}/tls.crt"
+        download_file_via_ssh(remote_crt_path, local_crt_path)
+        comp_result = compare_md5sums(local_crt_path, S3Client.static_tls_crt_path)
+
+    return comp_result
+
+
+def download_file_via_ssh(remotepath, localpath, use_sudo=True):
+    """
+    Download a file from a remote machine via SSH
+
+    Using this func with use_sudo enabled can be used as a workaround
+    couldn't be downloaded via SFTP due to permissions issues.
+
+    Args:
+        remotepath (str): The full path to the file on the remote machine
+        localpath (str): The full path to the file on the local machine
+        use_sudo (bool): Whether to use sudo to download the file
+
+    Raises:
+        UnexpectedBehaviour: In case the file couldn't be downloaded
+    """
+    conn = SSHConnectionManager().connection
+    sudo = "sudo" if use_sudo else ""
+    with open(localpath, "wb") as f:
+        retcode, stdout, stderr = conn.exec_cmd(f"{sudo} cat {remotepath} ")
+        if retcode != 0:
+            raise UnexpectedBehaviour(
+                f"Failed to download file {remotepath} to {localpath}\n"
+                f"stdout: {stdout}\n"
+                f"stderr: {stderr}\n"
+            )
+        f.write(stdout.encode("UTF-8"))
