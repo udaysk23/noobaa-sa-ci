@@ -30,11 +30,11 @@ class AccessValidationStrategyFactory:
         Raises:
             NotImplementedError: If the operation is not supported
         """
-        prefix = "framework.bucket_policies.access_validation_strategies."
-        module = prefix + camel_to_snake(operation) + "_validation_strategy"
 
         # Dynamically import the strategy module
         try:
+            prefix = "framework.bucket_policies.access_validation_strategies."
+            module = prefix + camel_to_snake(operation) + "_validation_strategy"
             strategy_module = importlib.import_module(module)
         except ImportError:
             raise NotImplementedError(
