@@ -15,9 +15,13 @@ class AccessValidationStrategyFactory:
         Dynamically imports the appropriate strategy class and module based on the operation,
         and returns an instance of that class.
 
-        Supported operations need to have a corresponding strategy class defined in this module,
-        with the class name being the operation followed by "ValidationStrategy".
-            - For example: HeadObject -> HeadObjectValidationStrategy
+        Supported operations need to have a corresponding strategy class
+        defined the access_validation_strategies module so that the factory can create an instance of it.
+        The file name should start with the operation name in snake case, followed by "_validation_strategy.py".
+        The class name should be the operation name in camel case, followed by "ValidationStrategy".
+
+        i.e. for the operation "CopyObject", the file should be "copy_object_validation_strategy.py",
+        and the class should be "CopyObjectValidationStrategy".
 
         Args:
             admin_client (S3Client): The privileged client for setting up preconditions
