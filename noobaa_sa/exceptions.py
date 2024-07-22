@@ -10,6 +10,14 @@ class AccountDeletionFailed(Exception):
     pass
 
 
+class AccountUpdateFailed(Exception):
+    pass
+
+
+class AccountStatusQueryFailed(Exception):
+    pass
+
+
 class InvalidDeploymentType(Exception):
     pass
 

@@ -167,3 +167,48 @@ def camel_to_snake(s):
             snake_case.append("_")
         snake_case.append(ch.lower())
     return "".join(snake_case)
+
+
+def flatten_dict(d):
+    """
+    Flatten a nested dictionary into a single-level dictionary that contains
+    only the leaves-level key-value pairs.
+
+    Args:
+        d (dict): The nested dictionary to flatten.
+
+    Returns:
+        dict: The flattened dictionary.
+
+    Example:
+        >>> d = {
+        ...     "a": 1,
+        ...     "b": {
+        ...         "c": 2,
+        ...         "d": [
+        ...             {"e": 3}
+        ...         ]
+        ...     }
+        ... }
+        >>> flatten_dict(d)
+        {'a': 1, 'c': 2, 'e': 3}
+    """
+
+    def _recur_flatten_dict(d):
+        items = []
+        for k, v in d.items():
+            if isinstance(v, dict):
+                # If the value is a dict, recursively flatten it and extend the items list
+                items.extend(_recur_flatten_dict(v).items())
+            elif isinstance(v, list):
+                # If the value is a list, iterate through the list
+                for item in v:
+                    if isinstance(item, dict):
+                        # If the list item is a dictionary, recursively flatten it and extend the items list
+                        items.extend(_recur_flatten_dict(item).items())
+            else:
+                # If the value is neither a dictionary nor a list, add the key-value pair to the items list
+                items.append((k, v))
+        return dict(items)
+
+    return _recur_flatten_dict(d)
