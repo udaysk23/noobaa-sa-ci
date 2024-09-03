@@ -2,6 +2,7 @@
 Module which contain account operations like create, delete, list and update
 """
 
+import json
 import logging
 import os
 import tempfile
@@ -18,6 +19,8 @@ from noobaa_sa.exceptions import (
     AccountCreationFailed,
     AccountDeletionFailed,
     AccountListFailed,
+    AccountStatusQueryFailed,
+    AccountUpdateFailed,
 )
 from utility.utils import generate_random_key, get_noobaa_sa_host_home_path
 
@@ -86,6 +89,9 @@ class NSFSAccount(Account):
                 account_name (str): name of the account
                 access_key (str): access key for the account
                 secret_key (str): secret key for the account
+
+                If account_name, access_key and secret_key are not provided,
+                default values will be generated and returned
 
         """
 
@@ -178,16 +184,58 @@ class NSFSAccount(Account):
         if retcode != 0:
             raise AccountDeletionFailed(f"Deleting account failed with error {stderr}")
 
-    def update(self, account_json):
+    def update(self, account_name, update_params, config_root=None):
         """
         Account update
 
         Args:
-            account_json (str): Path to account json file
+            account_name (str): name of the account
+            update_params (dict): dictionary containing the parameters to be updated
+                                  and their new values
+            config_root (str): path to config root
 
         """
-        # TODO: Implement update operation
-        raise NotImplementedError("Account update functionality is not implemented")
+        if config_root is None:
+            config_root = self.config_root
+
+        cmd = f"sudo {self.manage_nsfs} account update --name {account_name}"
+        for key, new_value in update_params.items():
+            # Convert boolean values to the expected string format
+            if isinstance(new_value, bool):
+                new_value = str(new_value).lower()
+            cmd += f" --{key} {new_value}"
+        cmd += f" --config_root {config_root}"
+
+        retcode, stdout, stderr = self.conn.exec_cmd(cmd)
+        if retcode != 0:
+            raise AccountUpdateFailed(f"Updating account failed with error {stderr}")
+
+    def status(self, account_name, config_root=None):
+        """
+        Get the config data of a given account
+
+        Args:
+            account_name (str): name of the account
+            config_root (str): path to config root
+
+        Returns:
+            dict: The config data of the account
+
+        """
+        if config_root is None:
+            config_root = self.config_root
+
+        cmd = f"sudo {self.manage_nsfs} account status --name {account_name} --show_secrets"
+        cmd += f" --config_root {config_root}"
+
+        retcode, stdout, stderr = self.conn.exec_cmd(cmd)
+        if retcode != 0:
+            raise AccountStatusQueryFailed(
+                f"Getting account status failed with error {stderr}"
+            )
+
+        response_dict = json.loads(stdout)
+        return response_dict["response"]["reply"]
 
 
 class DBAccount(Account):
