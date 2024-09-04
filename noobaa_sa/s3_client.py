@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import tempfile
@@ -179,6 +180,27 @@ class S3Client:
         log.info(f"Listed objects: {listed_obs}")
         return response_dict if get_response else listed_obs
 
+    def head_object(self, bucket_name, object_key):
+        """
+        Get the metadata of an object in an S3 bucket using boto3
+
+        Args:
+            bucket_name (str): The name of the bucket
+            object_key (str): The key of the object
+
+        Returns:
+            dict: A dictionary containing the response from the head_object call.
+                  Also includes the added Code key at the root level.
+
+        """
+        log.info(
+            f"Getting metadata of object {object_key} from bucket {bucket_name} via boto3"
+        )
+        response_dict = self._exec_boto3_method(
+            "head_object", Bucket=bucket_name, Key=object_key
+        )
+        return response_dict
+
     def put_object(self, bucket_name, object_key, body):
         """
         Put an object to an S3 bucket using boto3
@@ -289,6 +311,59 @@ class S3Client:
         copy_source = {"Bucket": src_bucket, "Key": src_key}
         response_dict = self._exec_boto3_method(
             "copy_object", Bucket=dest_bucket, CopySource=copy_source, Key=dest_key
+        )
+        return response_dict
+
+    def put_bucket_policy(self, bucket_name, policy):
+        """
+        Put a bucket policy using boto3
+
+        Args:
+            bucket_name (str): The name of the bucket
+            policy (str or dict): The policy to put on the bucket
+
+        Returns:
+            dict: A dictionary containing the response from the put_bucket_policy call.
+
+        """
+        if isinstance(policy, dict):
+            policy = json.dumps(policy, indent=4)
+        log.info(f"Putting the following policy on bucket {bucket_name} via boto3")
+        log.info(policy)
+        response_dict = self._exec_boto3_method(
+            "put_bucket_policy", Bucket=bucket_name, Policy=policy
+        )
+        return response_dict
+
+    def get_bucket_policy(self, bucket_name):
+        """
+        Get a bucket policy using boto3
+
+        Args:
+            bucket_name (str): The name of the bucket
+
+        Returns:
+            dict: A dictionary containing the response from the get_bucket_policy call.
+
+        """
+        log.info(f"Getting the policy of bucket {bucket_name} via boto3")
+        response_dict = self._exec_boto3_method("get_bucket_policy", Bucket=bucket_name)
+        return response_dict
+
+    def delete_bucket_policy(self, bucket_name):
+        """
+        Delete a bucket policy using boto3
+
+        Args:
+            bucket_name (str): The name of the bucket
+
+        Returns:
+            dict: A dictionary containing the response from the delete_bucket_policy call.
+
+        """
+        log.info(f"Deleting the policy of bucket {bucket_name} via boto3")
+        response_dict = self._exec_boto3_method(
+            "delete_bucket_policy", Bucket=bucket_name
         )
         return response_dict
 
