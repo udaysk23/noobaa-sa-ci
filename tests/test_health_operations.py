@@ -36,15 +36,9 @@ class Test_health_operations:
                         "https_port": 6443
                     },
             ),
-            pytest.param(
-                    {
-                        "https_port": None
-                    },
-            )
         ],
         ids=[
              "custom_value",
-             "default_value",
         ],
     )
     def test_noobaa_port_flag(self, setup_prereqs, flag):
@@ -76,16 +70,10 @@ class Test_health_operations:
                         "all_account_details": False
                     },
             ),
-            pytest.param(
-                    {
-                        "all_account_details": None
-                    },
-            ),
         ],
         ids=[
              "true_value",
              "false_value",
-             "default_value",
         ],
     )
     def test_noobaa_account_flag(self, setup_prereqs, flag):
@@ -100,11 +88,11 @@ class Test_health_operations:
             raise e.HealthStatusFailed(
                     f"Health check failed for get all account with error {get_info['error']['error_code']}"
                 )
-        if flag.get('all_account_details') is True and len(get_info['checks']['accounts_status']['valid_accounts']) == 0:
+        if flag.get('all_account_details') is True and len(get_info['response']['reply']['checks']['accounts_status']['valid_accounts']) == 0:
             raise e.HealthStatusFailed(
                     f"Health command failed to get all account info with flag --all_account_details {flag.get('all_account_details')}"
                 )
-        if (flag.get('all_account_details') is False or flag.get('all_account_details') is None) and len(get_info['checks']['accounts_status']['valid_accounts']) != 0:
+        if (flag.get('all_account_details') is False) and ("accounts_status" in get_info['response']['reply']['checks'].keys()):
             raise e.HealthStatusFailed(
                     f"Health command failed to get all account info with flag --all_account_details {flag.get('all_account_details')}"
                 )
@@ -125,16 +113,10 @@ class Test_health_operations:
                         "all_bucket_details": False
                     },
             ),
-            pytest.param(
-                    {
-                        "all_bucket_details": None
-                    },
-            ),
         ],
         ids=[
              "true_value",
              "false_value",
-             "default_value",
         ],
     )
     def test_noobaa_bucket_flag(self, setup_prereqs, flag):
@@ -149,11 +131,11 @@ class Test_health_operations:
             raise e.HealthStatusFailed(
                     f"Health check failed for get all account with error {get_info['error']['error_code']}"
                 )
-        if flag.get('all_bucket_details') is True and len(get_info['checks']['buckets_status']['valid_buckets']) == 0:
+        if flag.get('all_bucket_details') is True and len(get_info['response']['reply']['checks']['buckets_status']['valid_buckets']) == 0:
             raise e.HealthStatusFailed(
                     f"Health command failed to get all account info with flag --all_bucket_details {flag.get('all_bucket_details')}"
                 )
-        if (flag.get('all_bucket_details') is False or flag.get('all_bucket_details') is None) and len(get_info['checks']['buckets_status']['valid_buckets']) != 0:
+        if (flag.get('all_bucket_details') is False) and ("buckets_status" in get_info['response']['reply']['checks'].keys()):
             raise e.HealthStatusFailed(
                     f"Health command failed to get all account info with flag --all_account_details {flag.get('all_bucket_details')}"
                 )

@@ -41,25 +41,17 @@ def get_noobaa_health_status(
     log.info("Getting current Noobaa Health status")
     conn = SSHConnectionManager().connection
     cmd_options_data = kwargs
-    base_cmd = f"sudo /usr/local/noobaa-core/bin/node {HEALTH}"
+    base_cmd = f"sudo {HEALTH}"
     cmd_options = ""
     if "https_port" in cmd_options_data:
-        if cmd_options_data.get('https_port') is None:
-            cmd_options = cmd_options + "--https_port "
-        else:
-            cmd_options = cmd_options + f"--https_port {cmd_options_data.get('https_port')} "
+        assert cmd_options_data.get('https_port'), f"Default values are not supported for health check operation"
+        cmd_options = cmd_options + f"--https_port {cmd_options_data.get('https_port')} "
     if "deployment_type" in cmd_options_data:
         cmd_options = cmd_options + f"--deployment_type {cmd_options_data.get('deployment_type')} "
     if "all_account_details" in cmd_options_data:
-        if cmd_options_data.get('all_account_details') is None:
-            cmd_options = cmd_options + "--all_account_details "
-        else:
-            cmd_options = cmd_options + f"--all_account_details {cmd_options_data.get('all_account_details')} "
+        cmd_options = cmd_options + f"--all_account_details {cmd_options_data.get('all_account_details')} "
     if "all_bucket_details" in cmd_options_data:
-        if cmd_options_data.get('all_bucket_details') is None:
-            cmd_options = cmd_options + "--all_bucket_details "
-        else:
-            cmd_options = cmd_options + f"--all_bucket_details {cmd_options_data.get('all_bucket_details')} "
+        cmd_options = cmd_options + f"--all_bucket_details {cmd_options_data.get('all_bucket_details')} "
     cmd = f"{base_cmd} {cmd_options} --config_root {config_root} {constants.UNWANTED_LOG}"
     retcode, stdout, _ = conn.exec_cmd(cmd)
     if retcode != 0:
