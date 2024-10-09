@@ -52,9 +52,14 @@ def account_manager_implementation(request, account_json=None):
 
     def cleanup():
         """
-        Make sure to delete the anonymous account
+        Make sure to delete the created account abd buckets
         """
         try:
+            bucket_manager = BucketManager()
+            for bucket in bucket_manager.list():
+                bucket_manager.delete(bucket, force=True)
+            for acc in acc_manager_instance.list():
+                acc_manager_instance.delete(account_name=acc)
             acc_manager_instance.delete(account_name="anonymous")
         except AccountDeletionFailed as e:
             log.warning(f"Failed to delete anonymous account: {e}")

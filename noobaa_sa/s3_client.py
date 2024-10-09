@@ -290,7 +290,7 @@ class S3Client:
         )
         return response_dict
 
-    def copy_object(self, src_bucket, src_key, dest_bucket, dest_key):
+    def copy_object(self, src_bucket, src_key, dest_bucket, dest_key, **kwargs):
         """
         Copy an object using boto3
 
@@ -310,7 +310,11 @@ class S3Client:
         )
         copy_source = {"Bucket": src_bucket, "Key": src_key}
         response_dict = self._exec_boto3_method(
-            "copy_object", Bucket=dest_bucket, CopySource=copy_source, Key=dest_key
+            "copy_object",
+            Bucket=dest_bucket,
+            CopySource=copy_source,
+            Key=dest_key,
+            **kwargs,
         )
         return response_dict
 
@@ -491,7 +495,7 @@ class S3Client:
         log.info(f"Deleting all objects in bucket {bucket_name} via boto3")
         self._boto3_resource.Bucket(bucket_name).objects.all().delete()
 
-    def initiate_multipart_object_upload(self, bucket_name, object_name):
+    def initiate_multipart_object_upload(self, bucket_name, object_name, **kwargs):
         """
         Initiate multipart object to the S3 bucket using boto3
 
@@ -505,7 +509,7 @@ class S3Client:
         """
 
         resp = self._boto3_client.create_multipart_upload(
-            Bucket=bucket_name, Key=object_name
+            Bucket=bucket_name, Key=object_name, **kwargs
         )
         return resp["UploadId"]
 

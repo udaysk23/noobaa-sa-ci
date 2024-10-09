@@ -4,9 +4,11 @@ Module which contain bucket operations like create, delete, list, status and upd
 
 import json
 import logging
+import os
 
 from framework import config
 from framework.ssh_connection_manager import SSHConnectionManager
+from utility.utils import get_noobaa_sa_host_home_path
 from noobaa_sa.defaults import MANAGE_NSFS
 import noobaa_sa.exceptions as e
 
@@ -28,7 +30,7 @@ class BucketManager:
         self.unwanted_log = "2>/dev/null"
         self.conn = SSHConnectionManager().connection
 
-    def create(self, account_name, bucket_name, config_root=None):
+    def create(self, account_name, bucket_name, config_root=None, **kwargs):
         """
         Create bucket using CLI
 
@@ -47,10 +49,19 @@ class BucketManager:
         log.info(stdout)
         account_info = json.loads(stdout)
         account_owner = account_info["response"]["reply"]["name"]
-        bucket_path = account_info["response"]["reply"]["nsfs_account_config"][
-            "new_buckets_path"
-        ]
-        cmd = f"{self.base_cmd} bucket add --config_root {config_root} --name {bucket_name} --owner {account_owner} --path {bucket_path} {self.unwanted_log}"
+        extra_param = ""
+        if "custom_path" in kwargs:
+            hd = get_noobaa_sa_host_home_path()
+            bucket_path = os.path.join(hd, f"fs_{account_name}_{bucket_name}")
+            cmd = f"sudo mkdir {bucket_path}"
+            self.conn.exec_cmd(cmd)
+        else:
+            bucket_path = account_info["response"]["reply"]["nsfs_account_config"][
+                "new_buckets_path"
+            ]
+        if "custom_fs_backend" in kwargs:
+            extra_param = f"fs_backend = {kwargs.get("custom_fs_backend")} "
+        cmd = f"{self.base_cmd} bucket add --config_root {config_root} --name {bucket_name} --owner {account_owner} --path {bucket_path} {extra_param} {self.unwanted_log}"
         retcode, stdout, stderr = self.conn.exec_cmd(cmd)
         if retcode != 0:
             raise e.BucketCreationFailed(f"Failed to create bucket {stderr}")
