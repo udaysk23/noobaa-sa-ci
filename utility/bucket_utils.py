@@ -14,9 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def upload_incomplete_multipart_object(
-    c_scope_s3client,
-    tmp_directories_factory,
-    amount=1,
+    c_scope_s3client, tmp_directories_factory, amount=1, **kwargs
 ):
     """
     Uploads multipart object without actual completing it
@@ -50,8 +48,7 @@ def upload_incomplete_multipart_object(
     log.info("Initiate multipart upload process")
     for i in range(len(object_names)):
         get_upload_id = c_scope_s3client.initiate_multipart_object_upload(
-            bucket_name,
-            object_names[i],
+            bucket_name, object_names[i], **kwargs
         )
         resp_dir[f"{object_names[i]}_upload_id"] = get_upload_id
         all_part_info = []
