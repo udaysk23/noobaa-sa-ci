@@ -8,3 +8,7 @@ REPORTING:
   email:
     address: "ocs-ci@redhat.com"
     smtp_server: "localhost"
+
+# in this RUN section we will keep default parameters for run of noobaa-sa-ci
+RUN:
+  cli_params: {}

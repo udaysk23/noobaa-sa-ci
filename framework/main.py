@@ -24,24 +24,17 @@ def process_arguments(arguments):
     parser.add_argument("--email")
 
     args, unknown = parser.parse_known_args(args=arguments)
-    for each_arg in unknown:
-        if each_arg.startswith("--html"):
-            if "=" in each_arg:
-                framework.config.ENV_DATA["html_path"] = each_arg.split("=", 1)[1]
-            else:
-                html_path_position = unknown.index("--html")
-                framework.config.ENV_DATA["html_path"] = unknown[html_path_position + 1]
-            break
-    # for cli_param in unknown:
-    #     if "--html" in cli_param:
-    #         pattern = r'--html(?:=|\s+)(/[^ ]+)'
-    #         match = re.search(pattern, cli_param)
-    #         if match:
-    #             framework.config.ENV_DATA["html"] = match.group(1)
-
-    load_config(args.conf)
+    # for each_arg in unknown:
+    #     if each_arg.startswith("--email"):
+    #         if "=" in each_arg:
+    #             framework.config.RUN["cli_params"]["email"] = each_arg.split("=", 1)[1]
+    #         else:
+    #             html_path_position = unknown.index("--html")
+    #             framework.config.ENV_DATA["html_path"] = unknown[html_path_position + 1]
+    #         break
     if args.email:
-        framework.config.ENV_DATA["email"] = args.email
+        framework.config.RUN["cli_params"]["email"] = args.email
+    load_config(args.conf)
 
 
 def load_config(config_files):
