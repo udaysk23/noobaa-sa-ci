@@ -70,9 +70,9 @@ def send_email_reports(session):
     msg["To"] = ", ".join(recipients)
 
     msg = create_results_html(session)
-    with open("/home/oviner/ClusterPath/test7.html", "w") as file:
-        # Write the data to the file
-        file.write(msg)
+    # with open("/home/oviner/ClusterPath/test7.html", "w") as file:
+    #     # Write the data to the file
+    #     file.write(msg)
     try:
         s = smtplib.SMTP(config.REPORTING["email"]["smtp_server"])
         s.sendmail(sender, recipients, msg)
@@ -97,16 +97,16 @@ def create_results_html(session):
     for result in session.results.values():
         elapsed_time = f"{int(result.stop - result.start)} sec"
         if result.passed:
-            passed_tests.append((result.nodeid,elapsed_time, result.longreprtext))
+            passed_tests.append((result.nodeid, elapsed_time, result.longreprtext))
         elif result.failed:
-            failed_tests.append((result.nodeid,elapsed_time, result.longreprtext))
+            failed_tests.append((result.nodeid, elapsed_time, result.longreprtext))
         elif result.skipped:
-            skipped_tests.append((result.nodeid, elapsed_time,result.longreprtext))
+            skipped_tests.append((result.nodeid, elapsed_time, result.longreprtext))
         current_dir = Path(__file__).parent.parent.parent
         html_template = os.path.join(
             current_dir, "templates", "html_reports", "html_template.html"
         )
-    total_tests =  len(failed_tests) + len(passed_tests) + len(skipped_tests)
+    total_tests = len(failed_tests) + len(passed_tests) + len(skipped_tests)
     if total_tests == 0:
         return
     passed_percentage = f"{float((len(passed_tests) / total_tests) * 100):.2f}%"
@@ -136,7 +136,8 @@ def create_results_html(session):
             # Add the row to the table
             tbody.append(row)
 
-    add_version_data_to_table({"noobaa_sa":"1.1","os":"fedora40"}, "versions_table")
+    add_version_data_to_table({"noobaa_sa": "1.1", "os": "fedora40"}, "versions_table")
+
     # Helper function to insert rows into the appropriate table
     def add_test_data_to_table(test_data, table_id):
         tbody = soup.find(id=table_id)
@@ -166,16 +167,16 @@ def create_results_html(session):
     add_test_data_to_table(failed_tests, "failed_tests")
     add_test_data_to_table(passed_tests, "passed_tests")
     add_test_data_to_table(skipped_tests, "skipped_tests")
-    website_link = "www.ww.www"
-    link_section = soup.find('a')
-    link_section['href'] = website_link
+    website_link = config.RUN.get("jenkins_build_url")
+    link_section = soup.find("a")
+    link_section["href"] = website_link
     link_section.string = f"Job Link: {website_link}"
 
     # Step 8: Insert the statistics and website link into the HTML
-    stats_section = soup.find('ul')
-    stats_section.find_all('li')[0].string = f"Passed: {passed_percentage}"
-    stats_section.find_all('li')[1].string = f"Failed: {failed_percentage}"
-    stats_section.find_all('li')[2].string = f"Skipped: {skipped_percentage}"
+    stats_section = soup.find("ul")
+    stats_section.find_all("li")[0].string = f"Passed: {passed_percentage}"
+    stats_section.find_all("li")[1].string = f"Failed: {failed_percentage}"
+    stats_section.find_all("li")[2].string = f"Skipped: {skipped_percentage}"
 
     # Return the generated HTML as a string
     return soup.prettify()
