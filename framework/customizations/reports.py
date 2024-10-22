@@ -159,7 +159,7 @@ def create_results_html(session):
 
             # Comments cell (insert line breaks after every 10 characters)
             comments_cell = soup.new_tag("td")
-            wrapped_comments = "<br>".join(textwrap.wrap(comments, 100))
+            wrapped_comments = "<br>".join(textwrap.wrap(comments, 150))
             comments_cell.append(BeautifulSoup(wrapped_comments, "html.parser"))
             row.append(comments_cell)
 
