@@ -5,6 +5,7 @@ import textwrap
 import pytest
 from pathlib import Path
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from bs4 import BeautifulSoup
 
 from framework import config
@@ -69,13 +70,15 @@ def send_email_reports(session):
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
 
-    msg = create_results_html(session)
+    soup = create_results_html(session)
+    part1 = MIMEText(soup, "html")
+    msg.attach(part1)
     # with open("/home/oviner/ClusterPath/test7.html", "w") as file:
     #     # Write the data to the file
-    #     file.write(msg)
+    #     file.write(msg.as_string())
     try:
         s = smtplib.SMTP(config.REPORTING["email"]["smtp_server"])
-        s.sendmail(sender, recipients, msg)
+        s.sendmail(sender, recipients, msg.as_string())
         s.quit()
         log.info(f"Results have been emailed to {recipients}")
     except Exception as e:
@@ -178,5 +181,5 @@ def create_results_html(session):
     stats_section.find_all("li")[1].string = f"Failed: {failed_percentage}"
     stats_section.find_all("li")[2].string = f"Skipped: {skipped_percentage}"
 
-    # Return the generated HTML as a string
-    return soup.prettify()
+    # Return the generated HTML
+    return soup
