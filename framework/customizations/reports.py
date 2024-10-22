@@ -1,6 +1,7 @@
 import os
 import logging
 import smtplib
+import textwrap
 import pytest
 from pathlib import Path
 from email.mime.multipart import MIMEMultipart
@@ -89,30 +90,57 @@ def create_results_html(session):
         session (obj): Pytest session object
 
     """
-    failed = []
-    skipped = []
-    passed = []
+    failed_tests = []
+    passed_tests = []
+    skipped_tests = []
     # sort out passed, failed and skipped test cases
     for result in session.results.values():
         elapsed_time = f"{int(result.stop - result.start)} sec"
         if result.passed:
-            passed.append((result.nodeid, elapsed_time))
+            passed_tests.append((result.nodeid,elapsed_time, result.longreprtext))
         elif result.failed:
-            failed.append((result.nodeid, elapsed_time))
+            failed_tests.append((result.nodeid,elapsed_time, result.longreprtext))
         elif result.skipped:
-            skipped.append((result.nodeid, elapsed_time))
+            skipped_tests.append((result.nodeid, elapsed_time,result.longreprtext))
         current_dir = Path(__file__).parent.parent.parent
         html_template = os.path.join(
             current_dir, "templates", "html_reports", "html_template.html"
         )
+    total_tests =  len(failed_tests) + len(passed_tests) + len(skipped_tests)
+    if total_tests == 0:
+        return
+    passed_percentage = f"{float((len(passed_tests) / total_tests) * 100):.2f}%"
+    failed_percentage = f"{float((len(failed_tests) / total_tests) * 100):.2f}%"
+    skipped_percentage = f"{float((len(skipped_tests) / total_tests) * 100):.2f}%"
+
     with open(html_template) as fd:
         html_data = fd.read()
     soup = BeautifulSoup(html_data, "html.parser")
 
+    # Insert versions into the versions table
+    def add_version_data_to_table(versions, table_id):
+        tbody = soup.find(id=table_id)
+        for component, version in versions.items():
+            row = soup.new_tag("tr")
+
+            # Component name cell
+            component_cell = soup.new_tag("td")
+            component_cell.string = component
+            row.append(component_cell)
+
+            # Version cell
+            version_cell = soup.new_tag("td")
+            version_cell.string = version
+            row.append(version_cell)
+
+            # Add the row to the table
+            tbody.append(row)
+
+    add_version_data_to_table({"noobaa_sa":"1.1","os":"fedora40"}, "versions_table")
     # Helper function to insert rows into the appropriate table
     def add_test_data_to_table(test_data, table_id):
         tbody = soup.find(id=table_id)
-        for test_name, test_time in test_data:
+        for test_name, test_time, comments in test_data:
             row = soup.new_tag("tr")
 
             # Test name cell
@@ -125,13 +153,29 @@ def create_results_html(session):
             time_cell.string = test_time
             row.append(time_cell)
 
+            # Comments cell (insert line breaks after every 10 characters)
+            comments_cell = soup.new_tag("td")
+            wrapped_comments = "<br>".join(textwrap.wrap(comments, 100))
+            comments_cell.append(BeautifulSoup(wrapped_comments, "html.parser"))
+            row.append(comments_cell)
+
             # Add the row to the table
             tbody.append(row)
 
     # Insert test data into the respective tables
-    add_test_data_to_table(failed, "failed_tests")
-    add_test_data_to_table(passed, "passed_tests")
-    add_test_data_to_table(skipped, "skipped_tests")
+    add_test_data_to_table(failed_tests, "failed_tests")
+    add_test_data_to_table(passed_tests, "passed_tests")
+    add_test_data_to_table(skipped_tests, "skipped_tests")
+    website_link = "www.ww.www"
+    link_section = soup.find('a')
+    link_section['href'] = website_link
+    link_section.string = f"Job Link: {website_link}"
+
+    # Step 8: Insert the statistics and website link into the HTML
+    stats_section = soup.find('ul')
+    stats_section.find_all('li')[0].string = f"Passed: {passed_percentage}"
+    stats_section.find_all('li')[1].string = f"Failed: {failed_percentage}"
+    stats_section.find_all('li')[2].string = f"Skipped: {skipped_percentage}"
 
     # Return the generated HTML as a string
     return soup.prettify()

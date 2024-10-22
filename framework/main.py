@@ -24,14 +24,6 @@ def process_arguments(arguments):
     parser.add_argument("--email")
 
     args, unknown = parser.parse_known_args(args=arguments)
-    # for each_arg in unknown:
-    #     if each_arg.startswith("--email"):
-    #         if "=" in each_arg:
-    #             framework.config.RUN["cli_params"]["email"] = each_arg.split("=", 1)[1]
-    #         else:
-    #             html_path_position = unknown.index("--html")
-    #             framework.config.ENV_DATA["html_path"] = unknown[html_path_position + 1]
-    #         break
     if args.email:
         framework.config.RUN["cli_params"]["email"] = args.email
     load_config(args.conf)
