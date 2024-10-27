@@ -9,6 +9,7 @@ from email.mime.text import MIMEText
 from bs4 import BeautifulSoup
 
 from framework import config
+from utility.utils import get_noobaa_sa_rpm_name
 
 
 log = logging.getLogger(__name__)
@@ -66,7 +67,8 @@ def send_email_reports(session):
     [recipients.append(mailid) for mailid in mailids.split(",")]
     sender = "ocs-ci@redhat.com"
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "noobaa standalone results"
+    rpm_name = get_noobaa_sa_rpm_name()
+    msg["Subject"] = f"noobaa standalone results {rpm_name}"
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
 
@@ -139,7 +141,8 @@ def create_results_html(session):
             # Add the row to the table
             tbody.append(row)
 
-    add_version_data_to_table({"noobaa_sa": "1.1", "os": "fedora40"}, "versions_table")
+    rpm_name = get_noobaa_sa_rpm_name()
+    add_version_data_to_table({"rpm_name": rpm_name}, "versions_table")
 
     # Helper function to insert rows into the appropriate table
     def add_test_data_to_table(test_data, table_id):
