@@ -175,7 +175,7 @@ def create_results_html(session):
     link_section["href"] = website_link
     link_section.string = f"Job Link: {website_link}"
 
-    # Step 8: Insert the statistics and website link into the HTML
+    # Insert the statistics and website link into the HTML
     stats_section = soup.find("ul")
     stats_section.find_all("li")[0].string = f"Passed: {passed_percentage}"
     stats_section.find_all("li")[1].string = f"Failed: {failed_percentage}"
