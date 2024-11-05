@@ -12,6 +12,7 @@ from framework.ssh_connection_manager import SSHConnectionManager
 from common_ci_utils.file_system_utils import compare_md5sums
 from common_ci_utils.random_utils import parse_size_to_bytes
 
+from utility.retry import logger
 
 log = logging.getLogger(__name__)
 
@@ -249,3 +250,23 @@ def flatten_dict(d):
         return dict(items)
 
     return _recur_flatten_dict(d)
+
+
+def get_noobaa_sa_rpm_name():
+    """
+    Get the name of the RPM that was used to
+    install NooBaa on the remote machine
+
+    Returns:
+        str: The NooBaa SA RPM name
+        I.E noobaa-core-5.17.0-20241026.el9.x86_64
+
+    """
+    try:
+        conn = SSHConnectionManager().connection
+        cmd = "rpm -qa | grep noobaa"
+        _, stdout, _ = conn.exec_cmd(cmd)
+        return stdout.strip()
+    except Exception as e:
+        log.error(e)
+        return ""

@@ -21,8 +21,11 @@ def process_arguments(arguments):
     """
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--conf", action="append", default=[])
+    parser.add_argument("--email")
 
     args, unknown = parser.parse_known_args(args=arguments)
+    if args.email:
+        framework.config.RUN["cli_params"]["email"] = args.email
     load_config(args.conf)
 
 
@@ -48,6 +51,8 @@ def main(argv=None):
     arguments = argv or sys.argv[1:]
     arguments.extend(
         [
+            "-p",
+            "framework.customizations.reports",
             "-p",
             "framework.ssh_connection_manager",
             "-p",
