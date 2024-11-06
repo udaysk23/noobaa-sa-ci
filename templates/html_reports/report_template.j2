@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Results Report</title>
+</head>
+<body>
+    <h1>Test Results - Noobaa Stand-Alone CI</h1>
+
+    <h2>Test Statistics</h2>
+    <ul>
+        {% if statistics.Passed %}<li>Passed: {{ statistics.Passed }}%</li>{% endif %}
+        {% if statistics.Failed %}<li>Failed: {{ statistics.Failed }}%</li>{% endif %}
+        {% if statistics.Skipped %}<li>Skipped: {{ statistics.Skipped }}%</li>{% endif %}
+    </ul>
+
+    <h3><a href="{{ website_link }}">Click here for Jenkins Job</a></h3>
+
+    <h2>Versions</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Component</th>
+                <th>Version</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for component, version in versions.items() %}
+            <tr>
+                <td>{{ component }}</td>
+                <td>{{ version }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if failed_tests %}
+    <h2>Failures</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Time</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in failed_tests %}
+            <tr>
+                <td>{{ test.name }}</td>
+                <td>{{ test.time }}</td>
+                <td>{{ test.comments | replace("\n", "<br>") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if passed_tests %}
+    <h2>Passed</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Time</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in passed_tests %}
+            <tr>
+                <td>{{ test.name }}</td>
+                <td>{{ test.time }}</td>
+                <td>{{ test.comments | replace("\n", "<br>") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if skipped_tests %}
+    <h2>Skipped</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Time</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in skipped_tests %}
+            <tr>
+                <td>{{ test.name }}</td>
+                <td>{{ test.time }}</td>
+                <td>{{ test.comments | replace("\n", "<br>") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</body>
+</html>

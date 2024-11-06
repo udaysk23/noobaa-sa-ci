@@ -1,13 +1,12 @@
 import os
 import logging
 import smtplib
-import textwrap
 import pytest
-from pathlib import Path
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from bs4 import BeautifulSoup
-
+from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
 from framework import config
 from utility.utils import get_noobaa_sa_rpm_name
 
@@ -86,7 +85,7 @@ def send_email_reports(session):
 
 def create_results_html(session):
     """
-    Add squad analysis to the html test results used in email reporting
+    Add analysis to the html test results used in email reporting.
 
     Args:
         session (obj): Pytest session object
@@ -95,91 +94,55 @@ def create_results_html(session):
     failed_tests = []
     passed_tests = []
     skipped_tests = []
-    # sort out passed, failed and skipped test cases
+
+    # Sort out passed, failed, and skipped test cases
     for result in session.results.values():
         elapsed_time = f"{int(result.stop - result.start)} sec"
+        test_info = {
+            "name": result.nodeid,
+            "time": elapsed_time,
+            "comments": result.longreprtext,
+        }
+
         if result.passed:
-            passed_tests.append((result.nodeid, elapsed_time, result.longreprtext))
+            passed_tests.append(test_info)
         elif result.failed:
-            failed_tests.append((result.nodeid, elapsed_time, result.longreprtext))
+            failed_tests.append(test_info)
         elif result.skipped:
-            skipped_tests.append((result.nodeid, elapsed_time, result.longreprtext))
-        current_dir = Path(__file__).parent.parent.parent
-        html_template = os.path.join(
-            current_dir, "templates", "html_reports", "html_template.html"
-        )
+            skipped_tests.append(test_info)
+
+    # Calculate statistics
     total_tests = len(failed_tests) + len(passed_tests) + len(skipped_tests)
     if total_tests == 0:
         return
-    passed_percentage = f"{float((len(passed_tests) / total_tests) * 100):.2f}%"
-    failed_percentage = f"{float((len(failed_tests) / total_tests) * 100):.2f}%"
-    skipped_percentage = f"{float((len(skipped_tests) / total_tests) * 100):.2f}%"
 
-    with open(html_template) as fd:
-        html_data = fd.read()
-    soup = BeautifulSoup(html_data, "html.parser")
+    statistics = {
+        "Passed": f"{(len(passed_tests) / total_tests) * 100:.2f}",
+        "Failed": f"{(len(failed_tests) / total_tests) * 100:.2f}",
+        "Skipped": f"{(len(skipped_tests) / total_tests) * 100:.2f}",
+    }
 
-    # Insert versions into the versions table
-    def add_version_data_to_table(versions, table_id):
-        tbody = soup.find(id=table_id)
-        for component, version in versions.items():
-            row = soup.new_tag("tr")
+    # Versions data
+    rpm_name = get_noobaa_sa_rpm_name()  # Assuming this function gets version info
+    versions = {"rpm_name": rpm_name}
 
-            # Component name cell
-            component_cell = soup.new_tag("td")
-            component_cell.string = component
-            row.append(component_cell)
-
-            # Version cell
-            version_cell = soup.new_tag("td")
-            version_cell.string = version
-            row.append(version_cell)
-
-            # Add the row to the table
-            tbody.append(row)
-
-    rpm_name = get_noobaa_sa_rpm_name()
-    add_version_data_to_table({"rpm_name": rpm_name}, "versions_table")
-
-    # Helper function to insert rows into the appropriate table
-    def add_test_data_to_table(test_data, table_id):
-        tbody = soup.find(id=table_id)
-        for test_name, test_time, comments in test_data:
-            row = soup.new_tag("tr")
-
-            # Test name cell
-            test_cell = soup.new_tag("td")
-            test_cell.string = test_name
-            row.append(test_cell)
-
-            # Time cell
-            time_cell = soup.new_tag("td")
-            time_cell.string = test_time
-            row.append(time_cell)
-
-            # Comments cell (insert line breaks after every 10 characters)
-            comments_cell = soup.new_tag("td")
-            wrapped_comments = "<br>".join(textwrap.wrap(comments, 150))
-            comments_cell.append(BeautifulSoup(wrapped_comments, "html.parser"))
-            row.append(comments_cell)
-
-            # Add the row to the table
-            tbody.append(row)
-
-    # Insert test data into the respective tables
-    add_test_data_to_table(failed_tests, "failed_tests")
-    add_test_data_to_table(passed_tests, "passed_tests")
-    add_test_data_to_table(skipped_tests, "skipped_tests")
+    # Website link
     website_link = config.RUN.get("jenkins_build_url")
-    link_section = soup.find("a")
-    link_section["href"] = website_link
-    link_section.string = f"Job Link: {website_link}"
 
-    # Insert the statistics and website link into the HTML
-    stats_section = soup.find("ul")
-    stats_section.find_all("li")[0].string = f"Passed: {passed_percentage}"
-    stats_section.find_all("li")[1].string = f"Failed: {failed_percentage}"
-    stats_section.find_all("li")[2].string = f"Skipped: {skipped_percentage}"
+    # Set up Jinja2 environment and load template
+    current_dir = Path(__file__).parent.parent.parent
+    template_dir = os.path.join(current_dir, "templates", "html_reports")
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template("report_template.j2")
 
-    # Return the generated HTML
-    return soup
+    # Render the template with context data
+    html_output = template.render(
+        statistics=statistics,
+        website_link=website_link,
+        versions=versions,
+        failed_tests=failed_tests,
+        passed_tests=passed_tests,
+        skipped_tests=skipped_tests,
+    )
+
+    return html_output
