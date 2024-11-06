@@ -74,6 +74,9 @@ def send_email_reports(session):
     soup = create_results_html(session)
     part1 = MIMEText(soup, "html")
     msg.attach(part1)
+    with open("/home/oviner/ClusterPath/test7.html", "w") as file:
+        # Write the data to the file
+        file.write(msg.as_string())
     try:
         s = smtplib.SMTP(config.REPORTING["email"]["smtp_server"])
         s.sendmail(sender, recipients, msg.as_string())
@@ -126,7 +129,7 @@ def create_results_html(session):
     rpm_name = get_noobaa_sa_rpm_name()  # Assuming this function gets version info
     versions = {"rpm_name": rpm_name}
 
-    # Website link
+    # jenkins job link
     website_link = config.RUN.get("jenkins_build_url")
 
     # Set up Jinja2 environment and load template
