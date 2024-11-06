@@ -74,9 +74,9 @@ def send_email_reports(session):
     soup = create_results_html(session)
     part1 = MIMEText(soup, "html")
     msg.attach(part1)
-    with open("/home/oviner/ClusterPath/test7.html", "w") as file:
-        # Write the data to the file
-        file.write(msg.as_string())
+    # with open("/home/oviner/ClusterPath/test7.html", "w") as file:
+    #     # Write the data to the file
+    #     file.write(msg.as_string())
     try:
         s = smtplib.SMTP(config.REPORTING["email"]["smtp_server"])
         s.sendmail(sender, recipients, msg.as_string())
