@@ -6,6 +6,7 @@ import tempfile
 import pytest
 
 from common_ci_utils.command_runner import exec_cmd
+from datetime import datetime
 from common_ci_utils.random_utils import (
     generate_random_hex,
     generate_unique_resource_name,
@@ -24,6 +25,7 @@ from utility.utils import (
     get_noobaa_sa_host_home_path,
     is_linux_username_available,
     is_uid_gid_available,
+    get_noobaa_sa_rpm_name,
 )
 from utility.nsfs_server_utils import (
     get_system_json,
@@ -365,3 +367,21 @@ def linux_user_factory(request):
 
     request.addfinalizer(_cleanup)
     return _create_user
+
+
+@pytest.fixture(scope="session", autouse=True)
+def testsuite_properties(record_testsuite_property, pytestconfig):
+    """
+    Configures custom testsuite properties for junit xml
+    """
+    noobaa_sa_rpm_name = get_noobaa_sa_rpm_name()
+    time_now = datetime.now()
+    time_nums = time_now.strftime("%Y%m%d_%H%M%S")
+    job_name = f"noobaa-sa-{noobaa_sa_rpm_name}-{time_nums}"
+    record_testsuite_property("rp_noobaa_sa_rpm_name", noobaa_sa_rpm_name)
+    record_testsuite_property("rp_launch_url", config.REPORTING.get("rp_launch_url"))
+    record_testsuite_property("rp_launch_name", job_name)
+    record_testsuite_property(
+        f"rp_launch_description",
+        f"Job name:{job_name}\n{config.RUN.get('jenkins_build_url')}",
+    )
