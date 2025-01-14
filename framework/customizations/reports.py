@@ -98,10 +98,11 @@ def create_results_html(session):
     # Sort out passed, failed, and skipped test cases
     for result in session.results.values():
         elapsed_time = f"{int(result.stop - result.start)} sec"
+        comment_lines = "\n".join(result.longreprtext.split("\n")[-10:])
         test_info = {
             "name": result.nodeid,
             "time": elapsed_time,
-            "comments": result.longreprtext,
+            "comments": comment_lines,
         }
 
         if result.passed:
