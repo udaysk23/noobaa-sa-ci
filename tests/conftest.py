@@ -13,7 +13,7 @@ from common_ci_utils.random_utils import (
 )
 from framework.ssh_connection_manager import SSHConnectionManager
 from noobaa_sa import constants
-from noobaa_sa.exceptions import AccountDeletionFailed
+from noobaa_sa.exceptions import AccountDeletionFailed, BucketDeletionFailed
 from noobaa_sa.factories import AccountFactory
 from noobaa_sa.bucket import BucketManager
 from framework import config
@@ -57,15 +57,24 @@ def account_manager_implementation(request, account_json=None):
         """
         Make sure to delete the created account abd buckets
         """
-        try:
-            bucket_manager = BucketManager()
-            for bucket in bucket_manager.list():
-                bucket_manager.delete(bucket, force=True)
-            for acc in acc_manager_instance.list():
+        # Delete all the accounts that were created by this fixture
+        bucket_manager = BucketManager()
+        for acc in acc_manager_instance.accounts_created:
+            # Delete all the buckets that were created by this account
+            acc_id = acc_manager_instance.status(account_name=acc)["_id"]
+            for bucket in bucket_manager.list(use_wide=True):
+                bucket_name = bucket.get("name")
+                owner_account = bucket.get("owner_account")
+
+                if bucket_name and owner_account == acc_id:
+                    try:
+                        bucket_manager.delete(bucket_name, force=True)
+                    except BucketDeletionFailed as e:
+                        log.warning(f"Failed to delete bucket {bucket_name}: {e}")
+            try:
                 acc_manager_instance.delete(account_name=acc)
-            acc_manager_instance.delete(account_name="anonymous")
-        except AccountDeletionFailed as e:
-            log.warning(f"Failed to delete anonymous account: {e}")
+            except AccountDeletionFailed as e:
+                log.warning(f"Failed to delete account {acc}: {e}")
 
     request.addfinalizer(cleanup)
     return acc_manager_instance
@@ -388,4 +397,3 @@ def testsuite_properties(record_testsuite_property, pytestconfig):
         f"rp_launch_description",
         f"Job name:{noobaa_sa_rpm_name}\n{config.RUN.get('jenkins_build_url')}",
     )
-
